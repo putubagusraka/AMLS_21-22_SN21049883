@@ -9,4 +9,7 @@ Update 2: Made initial data preprocessing for task A and added accuracy metric f
 Update 3: First attempt task A with Logistic Regression and cleaned up data preprocessing code.
 
 Update 4: Restructured project foldering. Added general function for testing for both task A and B.
+
 Update 4b: Small fix with pathing.
+
+Update 5: Added SMOTE to oversample 'no_tumor' data, cleaned up code with functions.
