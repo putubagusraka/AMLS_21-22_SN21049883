@@ -13,3 +13,5 @@ Update 4: Restructured project foldering. Added general function for testing for
 Update 4b: Small fix with pathing.
 
 Update 5: Added SMOTE to oversample 'no_tumor' data, cleaned up code with functions.
+
+Update 6: Added K-fold CV for both task A dan task B.
