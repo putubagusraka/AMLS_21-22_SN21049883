@@ -15,3 +15,5 @@ Update 4b: Small fix with pathing.
 Update 5: Added SMOTE to oversample 'no_tumor' data, cleaned up code with functions.
 
 Update 6: Added K-fold CV for both task A dan task B.
+
+Update 7: Seperated files for each model. Simplified code by creating a master function .py file, so that each model notebook is shorter and doesn't repeat functions.
