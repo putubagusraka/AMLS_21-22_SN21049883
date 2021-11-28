@@ -19,3 +19,5 @@ Update 6: Added K-fold CV for both task A dan task B.
 Update 7: Seperated files for each model. Simplified code by creating a master function .py file, so that each model notebook is shorter and doesn't repeat functions.
 
 Update 7b: deleted old files
+
+Update 8: Updated project_functions file, updated CNN architecture.

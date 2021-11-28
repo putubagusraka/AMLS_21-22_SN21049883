@@ -36,21 +36,14 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, BatchNormalization, Activation
 from tensorflow.keras.optimizers import Adam, SGD
 from tensorflow.keras import datasets, layers, models
-
+from keras.preprocessing.image import ImageDataGenerator
 
 #---------------------------------------------------------------------DATA PROCESSING--------------------------------------------------------------
-def file_name_encoding_init(file_names):
-    le_filename = preprocessing.LabelEncoder()
-    le_filename.fit(file_names)
-    dump(le_filename, 'Task A Assets/Task_A_file_name_encoder.joblib') 
-
-
 def SMOTE_preprocessing(file_names, labels):
-    le_filename = joblib.load('Task A Assets/Task_A_file_name_encoder.joblib')
-    le_filename.fit(file_names)
-    le_file_names = le_filename.transform(file_names).reshape(-1,1)
+    le_filename = preprocessing.LabelEncoder()
+    le_file_names = le_filename.fit_transform(file_names).reshape(-1,1)
     
-    sm = SMOTE()
+    sm = SMOTE(sampling_strategy = "minority")
     SMOTE_file_names, SMOTE_labels = sm.fit_resample(le_file_names, labels)
     print("Distribution of image categories post-SMOTE:")
     print(Counter(list(SMOTE_labels)))
@@ -63,7 +56,6 @@ def PCA_process(x):
     pca = KernelPCA(kernel='rbf', n_components=800)
     x_flat = np.array([features_2d.flatten() for features_2d in x])
     x_pca = pca.fit_transform(x_flat)
-    dump(pca, 'Task A Assets/Task_A_PCA.joblib') 
     return x_pca
 
 
@@ -71,7 +63,7 @@ def image_processing(data_path,file_names,model):
     dataset_tumor=[]
     if model == 'svm':
         for file_name in file_names:
-            file=cv2.imread(data_path+"/image/"+file_name)
+            file=cv2.imread(data_path+"/image/"+file_name, cv2.IMREAD_GRAYSCALE)
             file_resize=cv2.resize(file,(256,256))
             dataset_tumor.append(file_resize)
         tumor_data = np.array(dataset_tumor)
@@ -79,7 +71,7 @@ def image_processing(data_path,file_names,model):
             
     elif model == 'cnn':
         for file_name in file_names:
-            file=cv2.imread(data_path+"/image/"+file_name)
+            file=cv2.imread(data_path+"/image/"+file_name, cv2.IMREAD_GRAYSCALE)
             file_resize=cv2.resize(file,(128,128))/255.
             dataset_tumor.append(file_resize)
         tumor_data = np.array(dataset_tumor)
@@ -99,11 +91,10 @@ def preprocessing_data(data_path, file, status, task, model):
         print("Distribution of image categories:")
         print(Counter(list(data['label'])))
         
-        file_name_encoding_init(file_names)
-        
         file_names, labels = SMOTE_preprocessing(file_names, labels)
         
         x = image_processing(data_path, file_names, model)
+        x = x.reshape(-1,128,128,1)
         x_train,x_test,y_train,y_test = train_test_split(x,labels,test_size=0.2)
         
         if model == 'svm':
@@ -187,22 +178,33 @@ def define_CNN(task):
     #This helps provide more space for the kernel to cover the image.
     #Activation: refers to activation function used to product output layer. Here I use ReLU as it is simple and doesn't suffer from vanishing gradients
     
-    model.add(Conv2D(32, kernel_size=(31,31), padding='same', activation='relu', input_shape=(128,128,3)))
+    model.add(Conv2D(32, kernel_size=(5,5), padding='same', activation='relu', input_shape=(128,128,1)))
     #MaxPooling reduces the size of the output matrix by obtaining the largest value from the a given pooling matrix 
     model.add(MaxPooling2D(pool_size=(2,2)))
     #Batch Normalization helps reduce the internal covariate shift of the network. 
     model.add(BatchNormalization())
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.25))
     
-    model.add(Conv2D(64, kernel_size=(27,27), padding='same', activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2,2)))
+    model.add(Conv2D(64, kernel_size=(3,3), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
     model.add(BatchNormalization())
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.3))
               
-    model.add(Conv2D(128, kernel_size=(25,25), strides=(2,2), padding='same', activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2,2)))
+    model.add(Conv2D(64, kernel_size=(3,3), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
     model.add(BatchNormalization())
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.3))
+    
+    
+    model.add(Conv2D(128, kernel_size=(2,2), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
+    model.add(BatchNormalization())
+    model.add(Dropout(0.3))
+    
+    model.add(Conv2D(128, kernel_size=(2,2), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
+    model.add(BatchNormalization())
+    model.add(Dropout(0.3))
     
     
     #Flatten layer converts data into a 1-dimensional array for inputting it to the next layer. 
@@ -211,48 +213,13 @@ def define_CNN(task):
     model.add(Flatten())
     
     model.add(Dense(1024, activation='relu'))
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.5))
     
-    model.add(Dense(256, activation='relu'))
-    model.add(Dropout(0.2))
     
     model.add(Dense(output_nodes, activation='softmax'))
     model.compile(loss="categorical_crossentropy",optimizer=Adam(learning_rate=0.001),  metrics=['acc'])
     
-    return model    
-
-def find_CNN_params(x_train, y_train, x_test, y_test, task):
-    clf = KerasClassifier(build_fn=lambda: define_CNN(task))
-    params={'batch_size':[100, 50, 32], 
-            'nb_epoch':[10, 25, 50]}
-    scorers = {
-        'accuracy_score': make_scorer(accuracy_score)
-        }
-    clf_search=GridSearchCV(estimator=clf, param_grid=params, cv=3, scoring=scorers, refit="accuracy_score")
-    result = clf_search.fit(x_train,y_train)
-    best_clf=clf_search.best_estimator_
-
-    print("Classifier: CNN - ", task)
-    print("Best Parameters: {}".format(clf_search.best_params_))
-    print("Best Validation Accuracy: %f" % (result.best_score_))
-
-    pred=best_clf.predict(x_test)
-
-    accuracy = accuracy_score(y_test, pred)
-    precision = precision_score(y_test,pred)
-    recall = recall_score(y_test,pred)
-    f1score = f1_score(y_test,pred)
-
-    print("Classifier Performance: CNN - ", task)
-    print("Test Accuracy: %.4f" %(accuracy))
-    print("Test Precision: %.4f" %(precision))
-    print("Test Recall: %.4f" %(recall))
-    print("Test F1-score: %.4f" %(f1score))
-    
-    if task == 'task_a':
-        joblib.dump(clf_search, 'Task A Assets/gridsearchcv_cnn.pkl')
-    elif task == 'task_b':
-        joblib.dump(clf_search, 'Task B Assets/gridsearchcv_cnn.pkl')
+    return model   
 #---------------------------------------------------------------------TRAINING PROCESSING--------------------------------------------------------------
 
 
@@ -322,8 +289,7 @@ def train_CNN(x_train_val, y_train_val, task):
         
         model = define_CNN(task)
         
-        
-        history1 = model.fit(x_train,y_train,epochs=50,batch_size=32,shuffle=True,validation_split=0.1)
+        history1 = model.fit(x_train,y_train,epochs=50,batch_size=32, validation_split = 0.1)
         
         acc_history = history1.history['acc']
         val_acc_history = history1.history['val_acc']
@@ -345,10 +311,10 @@ def train_CNN(x_train_val, y_train_val, task):
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
         plt.show()
-
+        
 
         print("The highest validation acc is {}".format(np.max(val_acc_history)))
-
+        
         result=model.predict(x_val)
         result_class = tf.one_hot(np.argmax(result, axis=1), depth = ohe_depth)
         
@@ -356,9 +322,9 @@ def train_CNN(x_train_val, y_train_val, task):
         y_val_class = ohe.inverse_transform(y_val)
 
         val_accuracy.append(accuracy_score(result_class, y_val_class))
-        val_precision.append(precision_score(result_class, y_val_class,average='micro'))
-        val_f1score.append(f1_score(result_class, y_val_class,average='micro'))
-        val_recall.append(recall_score(result_class, y_val_class,average='micro'))
+        val_precision.append(precision_score(result_class, y_val_class,average='macro'))
+        val_f1score.append(f1_score(result_class, y_val_class,average='macro'))
+        val_recall.append(recall_score(result_class, y_val_class,average='macro'))
 
         average_val_accuracy=sum(val_accuracy)/len(val_accuracy)
         average_val_precision=sum(val_precision)/len(val_precision)
