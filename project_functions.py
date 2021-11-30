@@ -48,12 +48,12 @@ def SMOTE_preprocessing(file_names, labels):
     print("Distribution of image categories post-SMOTE:")
     print(Counter(list(SMOTE_labels)))
     
-    SMOTE_file_names = le_filename.inverse_transform(SMOTE_file_names)
+    SMOTE_file_names = le_filename.inverse_transform(SMOTE_file_names.ravel())
 
     return SMOTE_file_names, SMOTE_labels
 
 def PCA_process(x):
-    pca = KernelPCA(kernel='rbf', n_components=800)
+    pca = KernelPCA(kernel='rbf', n_components=200)
     x_flat = np.array([features_2d.flatten() for features_2d in x])
     x_pca = pca.fit_transform(x_flat)
     return x_pca
@@ -62,19 +62,22 @@ def PCA_process(x):
 def image_processing(data_path,file_names,model):
     dataset_tumor=[]
     if model == 'svm':
+        img_size = 256
         for file_name in file_names:
             file=cv2.imread(data_path+"/image/"+file_name, cv2.IMREAD_GRAYSCALE)
-            file_resize=cv2.resize(file,(256,256))
+            file_resize=cv2.resize(file,(img_size,img_size))
             dataset_tumor.append(file_resize)
         tumor_data = np.array(dataset_tumor)
         tumor_data = PCA_process(tumor_data)
             
     elif model == 'cnn':
+        img_size = 128
         for file_name in file_names:
-            file=cv2.imread(data_path+"/image/"+file_name, cv2.IMREAD_GRAYSCALE)
-            file_resize=cv2.resize(file,(128,128))/255.
+            file=cv2.imread(data_path+"/image/"+file_name, cv2.IMREAD_GRAYSCALE) 
+            file_resize=cv2.resize(file,(img_size,img_size))/255.
             dataset_tumor.append(file_resize)
         tumor_data = np.array(dataset_tumor)
+        tumor_data = tumor_data.reshape(-1,img_size,img_size,1)
     return tumor_data
 
 def preprocessing_data(data_path, file, status, task, model):
@@ -84,6 +87,10 @@ def preprocessing_data(data_path, file, status, task, model):
     
     if task == 'task_a':
         data['label'] = data['label'].apply(lambda x: "no_tumor" if x == "no_tumor" else "tumor")
+        labels=data['label'].values.ravel()
+        le = preprocessing.LabelEncoder()
+        le.fit(labels)
+        dump(le, 'Task A Assets/Task_A_label_encoder.joblib') 
         
     labels=data['label'].values.ravel()
     
@@ -91,11 +98,11 @@ def preprocessing_data(data_path, file, status, task, model):
         print("Distribution of image categories:")
         print(Counter(list(data['label'])))
         
-        file_names, labels = SMOTE_preprocessing(file_names, labels)
+             
+        SMOTE_file_names, SMOTE_labels = SMOTE_preprocessing(file_names, labels)
         
-        x = image_processing(data_path, file_names, model)
-        x = x.reshape(-1,128,128,1)
-        x_train,x_test,y_train,y_test = train_test_split(x,labels,test_size=0.2)
+        x = image_processing(data_path, SMOTE_file_names, model)
+        x_train,x_test,y_train,y_test = train_test_split(x,SMOTE_labels,test_size=0.2)
         
         if model == 'svm':
             le_label = joblib.load('Task A Assets/Task_A_label_encoder.joblib')
@@ -134,11 +141,11 @@ def preprocessing_data(data_path, file, status, task, model):
 def find_SVM_params(x_train, y_train, x_test, y_test):
     classifiers=[svm.SVC()]
     classifierNames=['SVM']
-    parameters=[{'kernel':['rbf', 'sigmoid', 'poly'],'C':[0.7,2,10]}]
+    parameters=[{'kernel':['rbf', 'sigmoid', 'poly'],'C':[0.3,0.5,0.7,1]}]
 
     for i in range(len(classifiers)):
         clf=classifiers[i]
-        clf_search= GridSearchCV(clf, parameters[i], scoring = 'accuracy',cv = 3)
+        clf_search= GridSearchCV(clf, parameters[i], scoring = 'accuracy',cv = 3,error_score="raise")
         result = clf_search.fit(x_train,y_train)
         best_clf=clf_search.best_estimator_
         
@@ -178,33 +185,34 @@ def define_CNN(task):
     #This helps provide more space for the kernel to cover the image.
     #Activation: refers to activation function used to product output layer. Here I use ReLU as it is simple and doesn't suffer from vanishing gradients
     
-    model.add(Conv2D(32, kernel_size=(5,5), padding='same', activation='relu', input_shape=(128,128,1)))
+    model.add(Conv2D(64, kernel_size=(5,5), padding='same', activation='relu', input_shape=(128,128,1)))
     #MaxPooling reduces the size of the output matrix by obtaining the largest value from the a given pooling matrix 
     model.add(MaxPooling2D(pool_size=(2,2)))
     #Batch Normalization helps reduce the internal covariate shift of the network. 
     model.add(BatchNormalization())
     model.add(Dropout(0.25))
     
-    model.add(Conv2D(64, kernel_size=(3,3), padding='same', activation='relu'))
+    model.add(Conv2D(128, kernel_size=(3,3), padding='same', activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
     model.add(BatchNormalization())
     model.add(Dropout(0.3))
               
-    model.add(Conv2D(64, kernel_size=(3,3), padding='same', activation='relu'))
+    model.add(Conv2D(128, kernel_size=(3,3), padding='same', activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
     model.add(BatchNormalization())
     model.add(Dropout(0.3))
     
-    
-    model.add(Conv2D(128, kernel_size=(2,2), padding='same', activation='relu'))
+    model.add(Conv2D(128, kernel_size=(3,3), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
+    model.add(BatchNormalization())
+    model.add(Dropout(0.3))
+        
+    model.add(Conv2D(256, kernel_size=(2,2), padding='same', activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
     model.add(BatchNormalization())
     model.add(Dropout(0.3))
     
-    model.add(Conv2D(128, kernel_size=(2,2), padding='same', activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
-    model.add(BatchNormalization())
-    model.add(Dropout(0.3))
+
     
     
     #Flatten layer converts data into a 1-dimensional array for inputting it to the next layer. 
@@ -226,7 +234,7 @@ def define_CNN(task):
 
 def train_SVM(x_train_val,y_train_val):
     
-    kf = KFold(n_splits=3,shuffle=True)
+    kf = KFold(n_splits=5,shuffle=True)
     
     val_accuracy = []
     val_precision = []
@@ -239,7 +247,7 @@ def train_SVM(x_train_val,y_train_val):
         x_train, x_val = x_train_val[train_index], x_train_val[test_index]
         y_train, y_val = y_train_val[train_index], y_train_val[test_index]
 
-        model=svm.SVC(C=0.7,kernel='rbf')
+        model=svm.SVC(C=0.3,kernel='rbf')
         model.fit(x_train,y_train)
 
         pred_val=model.predict(x_val)

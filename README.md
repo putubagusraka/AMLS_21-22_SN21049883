@@ -21,3 +21,5 @@ Update 7: Seperated files for each model. Simplified code by creating a master f
 Update 7b: deleted old files
 
 Update 8: Updated project_functions file, updated CNN architecture.
+
+Update 9: Updated project_functions file, updated CNN architecture.
