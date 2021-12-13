@@ -49,16 +49,16 @@ Task A uses 2 models: SVM and CNN
 Task B uses 1 model: CNN
 
 1) There are 7 main ipynb files (split due to computational restraints). Each can be separted into the 3 main processes of the assignment.
-    a) For the main model training, we have **Training_Task_A_SVM.ipynb**, **Training_Task_A_CNN.ipynb**, and **Training_Task_B_CNN.ipynb**.
-    b) For ablation studies (which are simply just slightly adjusted versions of the main training models), we have **Ablation_Task_A_SVM.ipynb**, **Ablation_Task_A_CNN.ipynb**, and **Ablation_Task_B_CNN.ipynb**. 
-    c) For testing (all are combined into 1 file since there is no training, simply calling the already-trained models), we have the **Testing_All.ipynb**.
+    a) For the main model training, we have `Training_Task_A_SVM.ipynb`, `Training_Task_A_CNN.ipynb`, and `Training_Task_B_CNN.ipynb`.
+    b) For ablation studies (which are simply just slightly adjusted versions of the main training models), we have `Ablation_Task_A_SVM.ipynb`, `Ablation_Task_A_CNN.ipynb`, and `Ablation_Task_B_CNN.ipynb`. 
+    c) For testing (all are combined into 1 file since there is no training, simply calling the already-trained models), we have the `Testing_All.ipynb`.
 
-2) The .py files **project_functions.py** and  **ablation_functions.py** are packaged modules that are imported when running the **Ablation_*.ipynb**,
-    **Training_*.ipynb**, **Testing_All.ipynb** scripts.
+2) The .py files `project_functions.py` and  `ablation_functions.py` are packaged modules that are imported when running the `Ablation_*.ipynb`,
+    `Training_*.ipynb`, `Testing_All.ipynb` scripts.
 
-3) The file folders **dataset/** and **test/** containg the 3000 training images and 200 testing images respectively. In addition, each has a **label.csv** file that contains the label of each image.
+3) The file folders `dataset/` and `test/` containg the 3000 training images and 200 testing images respectively. In addition, each has a `label.csv` file that contains the label of each image.
 
-4) There are 3 asset folders containing the trained models (used for testing or if user does not intend to rerun the training scripts), those being **Task A Assets/**, **Task B Assets/**, and **Ablation Assets/**.
+4) There are 3 asset folders containing the trained models (used for testing or if user does not intend to rerun the training scripts), those being `Task A Assets/`, `Task B Assets/`, and `Ablation Assets/`.
 
 ## Code Execution
 
@@ -69,13 +69,13 @@ Task B uses 1 model: CNN
 3) Extract asset file as is into main directory, foldering already as needed. (should resemble the file directory tree stated above)
 
 #### For testing only
-1) All the models are pretrained already, as seen from the zip extractions. Simply run the **Testing_All.ipynb** script.
+1) All the models are pretrained already, as seen from the zip extractions. Simply run the `Testing_All.ipynb` script.
 
 #### For training and testing (both main and ablation)
-1) Run **Training_Task_A_SVM.ipynb**, **Training_Task_A_CNN.ipynb**, and **Training_Task_B_CNN.ipynb** scripts.
-2) Run **Ablation_Task_A_SVM.ipynb**, **Ablation_Task_A_CNN.ipynb**, and **Ablation_Task_B_CNN.ipynb** scripts. 
-3) Previously saved models in **Task A Assets/**, **Task B Assets/**, and **Ablation Assets/** folders will be overwritten.
-4) Run the **Testing_All.ipynb** script.
+1) Run `Training_Task_A_SVM.ipynb`, `Training_Task_A_CNN.ipynb`, and `Training_Task_B_CNN.ipynb` scripts.
+2) Run `Ablation_Task_A_SVM.ipynb`, `Ablation_Task_A_CNN.ipynb`, and `Ablation_Task_B_CNN.ipynb` scripts. 
+3) Previously saved models in `Task A Assets/`, `Task B Assets/`, and `Ablation Assets/` folders will be overwritten.
+4) Run the `Testing_All.ipynb` script.
 
 ## Dependent Environment and Libraries
 
