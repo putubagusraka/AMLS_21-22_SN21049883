@@ -27,12 +27,11 @@ Furthermore, after the training process, testing is done on the pure testing dat
 │       ├───assets
 │       └───variables
 ├───dataset
-│   └───image (contains 3000 training images)
+│   ├───image (contains 3000 training images)
 |   └───label.csv
-└───test
-│   └───image (contains 200 testing images)
-|   └───label.csv
-|
+├───test
+│   ├───image (contains 200 testing images)
+│   └───label.csv
 ├───Ablation_Task_A_CNN.ipynb
 ├───Ablation_Task_A_SVM.ipynb
 ├───Ablation_Task_B_CNN.ipynb
@@ -40,7 +39,6 @@ Furthermore, after the training process, testing is done on the pure testing dat
 ├───Training_Task_A_SVM.ipynb
 ├───Training_Task_B_CNN.ipynb
 ├───Testing_All.ipynb
-|
 ├───project_functions.py
 ├───ablation_functions.py
 ```
