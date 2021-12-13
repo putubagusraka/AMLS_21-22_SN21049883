@@ -73,18 +73,20 @@ Task B uses 1 model: CNN
 2) Download asset file from GDrive (https://drive.google.com/drive/folders/17FK40wSg1Or9Vr-PYvrjOeMALh05d2iS?usp=sharing)
 3) Extract asset file as is into main directory, foldering already as needed. (should resemble the file directory tree stated above)
 
+Based on desired usage, below are the steps on how to run.
+
 #### For testing only
 1) All the models are pretrained already, as seen from the zip extractions. Simply run the `Testing_All.ipynb` script.
 
-#### For training and testing (both main and ablation)
+#### Full run: Training and testing (both main and ablation)
 1) Run `Training_Task_A_SVM.ipynb`, `Training_Task_A_CNN.ipynb`, and `Training_Task_B_CNN.ipynb` scripts.
 2) Run `Ablation_Task_A_SVM.ipynb`, `Ablation_Task_A_CNN.ipynb`, and `Ablation_Task_B_CNN.ipynb` scripts. 
-3) Previously saved models in `Task A Assets/`, `Task B Assets/`, and `Ablation Assets/` folders will be overwritten.
-4) Run the `Testing_All.ipynb` script.
+    These will automatically overwrite previously saved models in `Task A Assets/`, `Task B Assets/`, and `Ablation Assets/` folders.
+3) Run the `Testing_All.ipynb` script.
 
 ## Dependent Environment and Libraries
 
-The whole project is developed in Python3.8.8. Please note that using other Python versions may lead to unknown errors. Required libraries are shown below.
+The whole project is developed in Python 3.8.8. Please note that using other Python versions may lead to unknown errors. Required libraries are shown below.
 * imbalanced_learn==0.8.1
 * imblearn==0.0
 * joblib==1.1.0
