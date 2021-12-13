@@ -51,6 +51,7 @@ Task A uses 2 models: SVM and CNN
 Task B uses 1 model: CNN
 
 1) There are 7 main ipynb files (split due to computational restraints). Each can be separated into the 3 main processes of the assignment.
+
     a) For the main model training, we have `Training_Task_A_SVM.ipynb`, `Training_Task_A_CNN.ipynb`, and `Training_Task_B_CNN.ipynb`.
     
     b) For ablation studies (which are simply just slightly adjusted versions of the main training models), we have `Ablation_Task_A_SVM.ipynb`, `Ablation_Task_A_CNN.ipynb`, and `Ablation_Task_B_CNN.ipynb`. 
