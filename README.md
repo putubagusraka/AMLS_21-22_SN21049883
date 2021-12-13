@@ -8,7 +8,7 @@ For task A, the binary classification is done using SVM and binary-label CNN. Fo
 Furthermore, after the training process, testing is done on the pure testing dataset released on the final week before the deadline, in which the trained model are tested alongside modified versions of the model for ablation study.
 
 ## Organization of Files
-
+```bash
 ├───Ablation Assets
 │   ├───Ablation_Task_A_CNN_Model
 │   │   ├───assets
@@ -43,7 +43,7 @@ Furthermore, after the training process, testing is done on the pure testing dat
 |
 ├───project_functions.py
 ├───ablation_functions.py
-
+```
 ## File Roles
 #### Base Directory
 As mentioned above and as stated in the assignment prompt:
