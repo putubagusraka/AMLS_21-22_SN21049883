@@ -28,7 +28,7 @@ Furthermore, after the training process, testing is done on the pure testing dat
 │       └───variables
 ├───dataset
 │   ├───image (contains 3000 training images)
-|   └───label.csv
+│   └───label.csv
 ├───test
 │   ├───image (contains 200 testing images)
 │   └───label.csv
