@@ -45,12 +45,16 @@ Furthermore, after the training process, testing is done on the pure testing dat
 ## File Roles
 #### Base Directory
 As mentioned above and as stated in the assignment prompt:
+
 Task A uses 2 models: SVM and CNN
+
 Task B uses 1 model: CNN
 
-1) There are 7 main ipynb files (split due to computational restraints). Each can be separted into the 3 main processes of the assignment.
+1) There are 7 main ipynb files (split due to computational restraints). Each can be separated into the 3 main processes of the assignment.
     a) For the main model training, we have `Training_Task_A_SVM.ipynb`, `Training_Task_A_CNN.ipynb`, and `Training_Task_B_CNN.ipynb`.
+    
     b) For ablation studies (which are simply just slightly adjusted versions of the main training models), we have `Ablation_Task_A_SVM.ipynb`, `Ablation_Task_A_CNN.ipynb`, and `Ablation_Task_B_CNN.ipynb`. 
+
     c) For testing (all are combined into 1 file since there is no training, simply calling the already-trained models), we have the `Testing_All.ipynb`.
 
 2) The .py files `project_functions.py` and  `ablation_functions.py` are packaged modules that are imported when running the `Ablation_*.ipynb`,
