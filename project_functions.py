@@ -1,24 +1,27 @@
-import os
+
 import pandas as pd
 import numpy as np
-import time
 import cv2
 import tensorflow as tf
-import keras.backend as K
 import keras
-from keras.wrappers.scikit_learn import KerasClassifier
+
+from collections import Counter
+from imblearn.over_sampling import SMOTE 
 
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix, classification_report,accuracy_score,precision_score,f1_score,recall_score, make_scorer
+from sklearn.metrics import classification_report,accuracy_score,precision_score,f1_score,recall_score
 from sklearn import preprocessing
 from sklearn import svm
-
 from sklearn.metrics import ConfusionMatrixDisplay
 from sklearn.model_selection import KFold
-from sklearn.decomposition import PCA, KernelPCA
-from sklearn.metrics import plot_confusion_matrix
+from sklearn.decomposition import KernelPCA
+from sklearn.model_selection import GridSearchCV
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, BatchNormalization, Activation
+from tensorflow.keras.optimizers import Adam, SGD
+
 
 import matplotlib.pyplot as plt
 
@@ -26,20 +29,20 @@ import pickle
 import joblib
 from joblib import dump, load
 
-from collections import Counter
-from imblearn.over_sampling import SMOTE 
-
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import GridSearchCV
-
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, BatchNormalization, Activation
-from tensorflow.keras.optimizers import Adam, SGD
-from tensorflow.keras import datasets, layers, models
-from keras.preprocessing.image import ImageDataGenerator
-
 #---------------------------------------------------------------------DATA PROCESSING--------------------------------------------------------------
 def SMOTE_preprocessing(file_names, labels):
+    """
+    This function takes the original set of file names and labels and use a label encoder to encode them (input must be numbers, not strings)
+    Then using SMOTE, the minority label is oversampled to match the label with the highest label.
+    
+    Key Parameters:
+    file_names = the original set of file_names that will be encoded and later used to inverse the process
+    labels = the original set of supervised labels
+    
+    Returns:
+    SMOTE_file_names = the oversampled set of filenames
+    SMOTE_labels = the oversampled set of labels
+    """
     le_filename = preprocessing.LabelEncoder()
     le_file_names = le_filename.fit_transform(file_names).reshape(-1,1)
     
@@ -53,16 +56,40 @@ def SMOTE_preprocessing(file_names, labels):
     return SMOTE_file_names, SMOTE_labels
 
 def PCA_process(x):
-    pca = KernelPCA(kernel='rbf', n_components=200)
+    """
+    This function reduces the dimension of the feature set to n components by first flattening the image vector to a 2D shape and then projecting it to a new n dimension feature space
+    
+    Key Parameters:
+    x = the original feature set
+    
+    Returns:
+    x_pca = the dimensionally reduced feature set
+    """
+    
+    pca = KernelPCA(kernel='cosine', n_components=150)
     x_flat = np.array([features_2d.flatten() for features_2d in x])
     x_pca = pca.fit_transform(x_flat)
     return x_pca
 
 
 def image_processing(data_path,file_names,model):
+    """
+    This function reads each individual image in the directory path with the opencv module.
+    Then, it will read every image one by one and resize them depending on the use case, which will result in an array for each image
+    This will then be appended to the main dataset vector, repeat for all images.
+    
+    Key Parameters:
+    data_path = directory of image folder
+    file_names = the set of image names
+    model = the type of model that is used, svm or cnn
+       
+    Returns:
+    tumor_data = the full image dataset in vector form
+    
+    """
     dataset_tumor=[]
     if model == 'svm':
-        img_size = 256
+        img_size = 16
         for file_name in file_names:
             file=cv2.imread(data_path+"/image/"+file_name, cv2.IMREAD_GRAYSCALE)
             file_resize=cv2.resize(file,(img_size,img_size))
@@ -81,16 +108,41 @@ def image_processing(data_path,file_names,model):
     return tumor_data
 
 def preprocessing_data(data_path, file, status, task, model):
-
+    """
+    This is the main data preprocessing function. 
+    For training, the function will first execute the SMOTE processing to obtain an oversampled training set and labels.
+    With the newly acquired oversampled file name set, this will be used to image process each image into vector form.
+    Then the train test split is used to obtain a 80% train set and 20% test set (this is different from the final week test set)
+    Furthermore, the y train and y test is encoded.
+    
+    For svm the labels are fit_transformed using a label encoder and the label encoder is saved for later use
+    For cnn the labels are fit_transformed using a one-hot encoder and the one-hot encoder is saved for later use
+    
+    For testing, the aforementioned label encoders are called to transform the y labels. The x labels are image processed as usual.
+    
+    Key Parameters:
+    data_path = directory of image folder
+    file_names = the set of image names
+    status = training or testing
+    task = task a or task b
+    model = the type of model that is used, svm or cnn
+    
+    Returns:
+    x_train = training set used for model training (which will then be split later into training and validation)
+    x_test = testing set used for model testing
+    y_train = supervised labels for training set used for model training (which will then be split later into training and validation)
+    y_test = supervised labels for testing set used for model testing   
+    """
     data=pd.read_csv(data_path+file)
     file_names=list(data['file_name'])
     
     if task == 'task_a':
         data['label'] = data['label'].apply(lambda x: "no_tumor" if x == "no_tumor" else "tumor")
         labels=data['label'].values.ravel()
-        le = preprocessing.LabelEncoder()
-        le.fit(labels)
-        dump(le, 'Task A Assets/Task_A_label_encoder.joblib') 
+        if status == 'training':
+            le = preprocessing.LabelEncoder()
+            le.fit(labels)
+            dump(le, 'Task A Assets/Task_A_label_encoder.joblib') 
         
     labels=data['label'].values.ravel()
     
@@ -131,17 +183,33 @@ def preprocessing_data(data_path, file, status, task, model):
                 encoder = joblib.load('Task A Assets/Task_A_one-hot_encoder.joblib')
             elif task == 'task_b':
                 encoder = joblib.load('Task B Assets/Task_B_one-hot_encoder.joblib')
-        
+            labels = labels.reshape(-1,1)
+            
         x_test = image_processing(data_path,file_names, model) 
-        y_test = encoder.transform(labels)
+        y_test = encoder.transform(np.array(labels))
         
         return x_test, y_test
 
 #---------------------------------------------------------------------HYPERPARAMETER PROCESSING--------------------------------------------------------------
 def find_SVM_params(x_train, y_train, x_test, y_test):
+    """
+    This function uses GridSearchCV to exhaust the hyperparameter tuning set to find the best combination for SVM.
+    The GridSearchCV uses 3-fold cross validation to assess the each combination.
+    Then the GridSearchCV is saved in case of further analysis.
+    
+    Key Parameters:
+    x_train = training set used for model training (which will then be split later into training and validation)
+    x_test = testing set used for model testing
+    y_train = supervised labels for training set used for model training (which will then be split later into training and validation)
+    y_test = supervised labels for testing set used for model testing   
+    
+    Output:
+    GridSearchCV object is saved to local directory in case needed for further analysis
+    The best parameters are used for the final assignment  
+    """
     classifiers=[svm.SVC()]
     classifierNames=['SVM']
-    parameters=[{'kernel':['rbf', 'sigmoid', 'poly'],'C':[0.3,0.5,0.7,1]}]
+    parameters=[{'kernel':['rbf', 'sigmoid', 'poly'],'C':[0.3,5,10]}]
 
     for i in range(len(classifiers)):
         clf=classifiers[i]
@@ -169,13 +237,8 @@ def find_SVM_params(x_train, y_train, x_test, y_test):
     joblib.dump(clf_search, 'Task A Assets/gridsearchcv_svm.pkl')
     
 def define_CNN(task):
-    if task == 'task_a':
-        output_nodes = 2
-    elif task == 'task_b':
-        output_nodes = 4
-    
-    model = Sequential()
-    
+    """
+    This function returns the CNN architecture used for task A and task B.
     #Conv2D is a 2D convolutional layer that applies 2d convolution to input signal composed of several input planes.
     #Kernel: is the filter that moves over the input layer to obtain a matrix of dot products based on the kernel size.
     #Strides metric: determines the shift of the kernel filter as it convolves around the input volume. 
@@ -184,11 +247,32 @@ def define_CNN(task):
     #Padding: refers to the amount of pixels added to an image when it is being processed by the kernel. 
     #This helps provide more space for the kernel to cover the image.
     #Activation: refers to activation function used to product output layer. Here I use ReLU as it is simple and doesn't suffer from vanishing gradients
+    #MaxPooling reduces the size of the output matrix by obtaining the largest value from the a given pooling matrix 
+    #Batch Normalization helps reduce the internal covariate shift of the network.
+    #Flatten layer converts data into a 1-dimensional array for inputting it to the next layer. 
+    #We flatten the output of the convolutional layers to create a single long feature vector 
+    #So basically after our layers of pooling, we want to extract the data so we can feed it into our neural network
+    
+    Key Parameters:
+    task = task_a or task_b, the only distinction between task a and b is the output node count.
+    
+    Returns:
+    model = the CNN model, ready to use for model training
+    
+    """
+    
+    if task == 'task_a':
+        output_nodes = 2
+    elif task == 'task_b':
+        output_nodes = 4
+    
+    model = Sequential()
+    
     
     model.add(Conv2D(64, kernel_size=(5,5), padding='same', activation='relu', input_shape=(128,128,1)))
-    #MaxPooling reduces the size of the output matrix by obtaining the largest value from the a given pooling matrix 
+
     model.add(MaxPooling2D(pool_size=(2,2)))
-    #Batch Normalization helps reduce the internal covariate shift of the network. 
+     
     model.add(BatchNormalization())
     model.add(Dropout(0.25))
     
@@ -211,13 +295,8 @@ def define_CNN(task):
     model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
     model.add(BatchNormalization())
     model.add(Dropout(0.3))
-    
+       
 
-    
-    
-    #Flatten layer converts data into a 1-dimensional array for inputting it to the next layer. 
-    #We flatten the output of the convolutional layers to create a single long feature vector 
-    #So basically after our layers of pooling, we want to extract the data so we can feed it into our neural network
     model.add(Flatten())
     
     model.add(Dense(1024, activation='relu'))
@@ -233,6 +312,19 @@ def define_CNN(task):
 
 
 def train_SVM(x_train_val,y_train_val):
+    """
+    This is the SVM training function with 5-fold cross validation.
+    Each 5 split data is trained with SVM model
+    Here accuracy, precision, recall, and f1 score are tallied and average for the 5 models
+    The SVM model is saved to local directory for any further testing
+    
+    Key Parameters:
+    x_train_val = the training set as result from the preprocessing function, split into training and validation data 
+    y_train_val = the supervised labels for training set as result from the preprocessing function, split into training and validation data 
+    
+    Returns:
+    SVM Model is saved to local directory to be called freely
+    """
     
     kf = KFold(n_splits=5,shuffle=True)
     
@@ -242,12 +334,12 @@ def train_SVM(x_train_val,y_train_val):
     val_f1score = []
     
     
-    print("SVM training with 3-Fold Cross Validation.")
+    print("SVM training with 5-Fold Cross Validation.")
     for train_index, test_index in kf.split(x_train_val):
         x_train, x_val = x_train_val[train_index], x_train_val[test_index]
         y_train, y_val = y_train_val[train_index], y_train_val[test_index]
 
-        model=svm.SVC(C=0.3,kernel='rbf')
+        model=svm.SVC(C=0.5,kernel='rbf')
         model.fit(x_train,y_train)
 
         pred_val=model.predict(x_val)
@@ -264,7 +356,7 @@ def train_SVM(x_train_val,y_train_val):
     average_val_f1score=sum(val_f1score)/len(val_f1score)
     
 
-    print("SVM Classifier 3-Fold CV:")
+    print("SVM Classifier 5-Fold CV:")
     print("Average Acc: %.4f" %(average_val_accuracy))
     print("Average Precision: %.4f" %(average_val_precision))
     print("Average recall: %.4f" %(average_val_recall))
@@ -274,6 +366,22 @@ def train_SVM(x_train_val,y_train_val):
     pickle.dump(model, open("Task A Assets/Task_A_SVM_Model", 'wb'))
 
 def train_CNN(x_train_val, y_train_val, task):
+    """
+    This is the CNN training function with 5-fold cross validation.
+    Each 5 split data is trained with SVM model
+    Here accuracy, precision, recall, and f1 score are tallied and average for the 5 models
+    The CNN model is saved to local directory for any further testing
+    
+    Key Parameters:
+    x_train_val = the training set as result from the preprocessing function, split into training and validation data 
+    y_train_val = the supervised labels for training set as result from the preprocessing function, split into training and validation data 
+    task = task_a or task_b, the only distinction between task a and b is the output node count and the argmax function parameter
+    
+    Returns:
+    CNN Model is saved to local directory to be called freely, for either task A and task B
+    """
+    
+    
     if task == 'task_a':
         ohe = joblib.load('Task A Assets/Task_A_one-hot_encoder.joblib')
         ohe_depth = 2
@@ -291,7 +399,6 @@ def train_CNN(x_train_val, y_train_val, task):
     
     print("CNN training with 5-Fold Cross Validation.")
     for train_index, test_index in kf.split(x_train_val):
-        k_number += 1
         x_train, x_val = x_train_val[train_index], x_train_val[test_index]
         y_train, y_val = y_train_val[train_index], y_train_val[test_index]
         
@@ -352,9 +459,27 @@ def train_CNN(x_train_val, y_train_val, task):
         model.save('Task B Assets/Task_B_CNN_Model')
 #---------------------------------------------------------------------TESTING PROCESSING--------------------------------------------------------------
 def test_SVM(x_test, y_test):
-
+    """
+    The main SVM testing function.
+    The function calls the trained model of the SVM that was saved locally, and uses it to test on testing data.
+    Results will include an accuracy score, confusion matrix, and a report regarding detailed accuracy, precision, recall, and f1 score
+    
+    Key Parameters:
+    x_test = the testing set used for testing the trained SVM model, must already be processed by the image_processing function
+    y_test = supervised labels for  the testing set used for testing the trained SVM model
+    
+    
+    Returns:
+    Predicted results for testing data
+    Performance metrics of model for testing data 
+    """
     loaded_model = pickle.load(open("Task A Assets/Task_A_SVM_Model", 'rb'))
     y_pred_svm = loaded_model.predict(x_test)
+    
+    le = joblib.load('Task A Assets/Task_A_label_encoder.joblib')
+    y_test = le.inverse_transform(y_test)
+    y_pred_svm =  le.inverse_transform(y_pred_svm)
+    
     print('Accuracy on test set: '+str(accuracy_score(y_test,y_pred_svm)))
     
     #text report showing the main classification metrics
@@ -364,6 +489,21 @@ def test_SVM(x_test, y_test):
     plt.show()
 
 def test_CNN(x_test, y_test, task):
+    """
+    The main CNN testing function.
+    The function calls the trained model of the CNN that was saved locally, and uses it to test on testing data.
+    Results will include an accuracy score, confusion matrix, and a report regarding detailed accuracy, precision, recall, and f1 score
+    
+    Key Parameters:
+    x_test = the testing set used for testing the trained CNN model, must already be processed by the image_processing function
+    y_test = supervised labels for  the testing set used for testing the trained CNN mode
+    task = task_a or task_b, the only distinction between task a and b is the output node count and the argmax function parameter
+    
+    Returns:
+    Predicted results for testing data
+    Performance metrics of model for testing data 
+    """
+    
     if task == 'task_a':
         loaded_model = keras.models.load_model('Task A Assets/Task_A_CNN_Model')
         ohe = joblib.load('Task A Assets/Task_A_one-hot_encoder.joblib')
@@ -386,5 +526,5 @@ def test_CNN(x_test, y_test, task):
     ConfusionMatrixDisplay.from_predictions(y_test_class, result_class, cmap = 'Blues')
     plt.xticks(rotation=45)
     plt.show()
-    print(loaded_model.summary())
-    print(classification_report(y_test_class, result_class))  
+    print(classification_report(y_test_class, result_class))
+    
