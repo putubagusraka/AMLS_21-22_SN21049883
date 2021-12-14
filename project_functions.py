@@ -58,6 +58,7 @@ def SMOTE_preprocessing(file_names, labels):
 def PCA_process(x):
     """
     This function reduces the dimension of the feature set to n components by first flattening the image vector to a 2D shape and then projecting it to a new n dimension feature space
+    Used for the image_processing function for SVM.
     
     Key Parameters:
     x = the original feature set
@@ -194,7 +195,7 @@ def preprocessing_data(data_path, file, status, task, model):
 def find_SVM_params(x_train, y_train, x_test, y_test):
     """
     This function uses GridSearchCV to exhaust the hyperparameter tuning set to find the best combination for SVM.
-    The GridSearchCV uses 3-fold cross validation to assess the each combination.
+    The GridSearchCV uses 3-fold cross validation to assess the each combination, 3-fold was used instead of 5-fold due to computational limit.
     Then the GridSearchCV is saved in case of further analysis.
     
     Key Parameters:
@@ -209,7 +210,7 @@ def find_SVM_params(x_train, y_train, x_test, y_test):
     """
     classifiers=[svm.SVC()]
     classifierNames=['SVM']
-    parameters=[{'kernel':['rbf', 'sigmoid', 'poly'],'C':[0.3,5,10]}]
+    parameters=[{'kernel':['rbf', 'sigmoid', 'poly'],'C':[0.5,5,10]}]
 
     for i in range(len(classifiers)):
         clf=classifiers[i]

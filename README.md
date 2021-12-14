@@ -41,6 +41,8 @@ Furthermore, after the training process, testing is done on the pure testing dat
 ├───Testing_All.ipynb
 ├───project_functions.py
 ├───ablation_functions.py
+├───__init__.py
+├───README.md
 ```
 ## File Roles
 #### Base Directory
