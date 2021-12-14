@@ -41,7 +41,7 @@ Furthermore, after the training process, testing is done on the pure testing dat
 ├───Testing_All.ipynb
 ├───project_functions.py
 ├───ablation_functions.py
-├───__init__.py
+├───__init__.pyg
 ├───README.md
 ```
 ## File Roles
@@ -83,7 +83,7 @@ Based on desired usage, below are the steps on how to run.
 #### Full run: Training and testing (both main and ablation)
 1) Run `Training_Task_A_SVM.ipynb`, `Training_Task_A_CNN.ipynb`, and `Training_Task_B_CNN.ipynb` scripts.
 2) Run `Ablation_Task_A_SVM.ipynb`, `Ablation_Task_A_CNN.ipynb`, and `Ablation_Task_B_CNN.ipynb` scripts. 
-    These will automatically overwrite previously saved models in `Task A Assets/`, `Task B Assets/`, and `Ablation Assets/` folders.
+Each script in steps 1 and 2 will automatically overwrite previously saved models in `Task A Assets/`, `Task B Assets/`, and `Ablation Assets/` folders.
 3) Run the `Testing_All.ipynb` script.
 
 ## Dependent Environment and Libraries
